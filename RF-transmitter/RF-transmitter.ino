@@ -22,14 +22,63 @@ const byte address[6] = "00501";
 const uint8_t  channel = 123;
 
 int lowmap = 10;
-int highmap = 250;
+int highmap = 1010;
 
 // Define the digital inputs
 #define lBTN 9  // Joystick button 1
 #define rBTN 10  // Joystick button 2
+#define switchL 0 // Left Switch
+#define switchR 1 // Right Switch
+#define switchMode 5 // Mode Switch
 
-// Packet = [leftstickx, leftsticky, rightstickx, rightsticky, btnleft, btnright, potleft, potright, toggleleft, toggleright]
-byte packet[] = {0,0,0,0,0,0,0,0,0,0};
+// Packet = [leftstickx, leftsticky, rightstickx, rightsticky, btnleft, btnright, potleft, potright, modeSW, leftSW, rightSW]
+
+/*
+
+packet length = 17
+
+packet[0] = leftstickxL
+packet[1] = leftstickxH
+packet[2] = leftstickyL
+packet[3] = leftstickyH
+packet[4] = rightstickxL
+packet[5] = rightstickxH
+packet[6] = rightstickyL
+packet[7] = rightstickyH
+packet[8] = btnleft
+packet[9] = btnright
+packet[10] = potleftL
+packet[11] = potleftH
+packet[12] = potrightL
+packet[13] = potrightH
+packet[14] = modeSW
+packet[15] = leftSW
+packet[16] = rightSW
+*/
+
+// Max size 32 bytes because of buffer limit
+struct CMD_Packet {
+  byte leftstickxL;
+  byte leftstickxH;
+  byte leftstickyL;
+  byte leftstickyH;
+  byte rightstickxL;
+  byte rightstickxH;
+  byte rightstickyL;
+  byte rightstickyH;
+  byte btnleft;
+  byte btnright;
+  byte potleftL;
+  byte potleftH;
+  byte potrightL;
+  byte potrightH;
+  byte modeSW;
+  byte leftSW;
+  byte rightSW;
+};
+
+//Make command packet
+CMD_Packet packet;
 
 void setup() {
   Serial.begin(9600);
@@ -62,32 +111,49 @@ void setup() {
   //Set Up Controls
   pinMode(lBTN, INPUT_PULLUP);
   pinMode(rBTN, INPUT_PULLUP);
+  pinMode(switchL, INPUT_PULLUP);
+  pinMode(switchR, INPUT_PULLUP);
+  pinMode(switchMode, INPUT_PULLUP);
 }
 
 void loop() {
 
   int tempx = 0;
   int tempy = 0;
+
+  Serial.println(analogRead(A0));
   
   // Read all analog inputs and map them to one Byte value
   //Gather Left Stick Values
   tempx = map(analogRead(A1),0,1023,lowmap,highmap);
   tempy = map(analogRead(A0),0,1023,highmap,lowmap);
-  packet[0] = tempx;
-  packet[1] = tempy;
+  packet.leftstickxL = (byte)tempx;
+  packet.leftstickxH = (byte)(tempx>>8);
+  packet.leftstickyL = (byte)tempy;
+  packet.leftstickyH = (byte)(tempy>>8);
+  
   //Gather Right Stick Values
   tempx = map(analogRead(A3),0,1023,lowmap,highmap);
   tempy = map(analogRead(A2),0,1023,highmap,lowmap);
-  packet[2] = tempx;
-  packet[3] = tempy; 
+  packet.rightstickxL = (byte)tempx;
+  packet.rightstickxH = (byte)(tempx>>8);
+  packet.rightstickyL = (byte)tempy;
+  packet.rightstickyH = (byte)(tempy>>8);
   
   // Read all digital inputs
-  packet[4] = digitalRead(lBTN);
-  packet[5] = digitalRead(rBTN);
+  packet.btnleft = digitalRead(lBTN);
+  packet.btnright = digitalRead(rBTN);
+  packet.modeSW = digitalRead(switchMode);
+  packet.leftSW = digitalRead(switchL);
+  packet.rightSW = digitalRead(switchR);
 
   // Read potentiometer values and assign them to packet
-  packet[6] = map(analogRead(A6),0,1023,highmap,lowmap);
-  packet[7] = map(analogRead(A7),0,1023,highmap,lowmap);
+  tempx = map(analogRead(A6),0,1023,highmap,lowmap);
+  tempy = map(analogRead(A7),0,1023,highmap,lowmap);
+  packet.potleftL = (byte)tempx;
+  packet.potleftH = (byte)(tempx>>8);
+  packet.potrightL = (byte)tempy;
+  packet.potrightH = (byte)(tempy>>8);
 
   // Send the whole data from the structure to the receiver
   radio.write(&packet, sizeof(packet));
@@ -107,46 +173,25 @@ void OLED_display()
   display.println("CONTROLS");
   display.setTextSize(1);
   display.setCursor(0,20);
-  display.println("LX: " + String(packet[0]));
+  display.println("LX: " + String(packet.leftstickxL | ((packet.leftstickxH & 0x03) << 8)));
   display.setCursor(0,30);
-  display.println("LY: " + String(packet[1]));
+  display.println("LY: " + String(packet.leftstickyL | ((packet.leftstickyH & 0x03) << 8)));
   display.setCursor(0,40);
-  display.println("RX: " + String(packet[2]));
+  display.println("RX: " + String(packet.rightstickxL | ((packet.rightstickxH & 0x03) << 8)));
   display.setCursor(0,50);
-  display.println("RY: " + String(packet[3]));
+  display.println("RY: " + String(packet.rightstickyL | ((packet.rightstickyH & 0x03) << 8)));
   display.setCursor(64,20);
-  display.println("BTNL: " + String(packet[4]));
+  display.println("BTNL: " + String(packet.btnleft));
   display.setCursor(64,30);
-  display.println("BTNR: " + String(packet[5]));
+  display.println("BTNR: " + String(packet.btnright));
   display.setCursor(64,40);
-  display.println("POTL: " + String(packet[6]));
+  display.println("POTL: " + String(packet.potleftL | ((packet.potleftH & 0x03) << 8)));
   display.setCursor(64,50);
-  display.println("POTR: " + String(packet[7]));
+  display.println("POTR: " + String(packet.potrightL | ((packet.potrightH & 0x03) << 8)));
   display.display();
 }
 
 void debug() {
       //THIS IS FOR DEBUG
-      int RecLarge= packet[0];
-      Serial.print("LX: ");
-      Serial.print(RecLarge);
-      RecLarge= packet[1];
-      Serial.print("; LY: ");
-      Serial.print(RecLarge);
-      Serial.print("; LB: ");
-      Serial.print(packet[4]);
-      RecLarge= packet[2];
-      Serial.print("; RX: ");
-      Serial.print(RecLarge); 
-      RecLarge= packet[3];
-      Serial.print("; RY: ");
-      Serial.print(RecLarge);
-      Serial.print("; RB: ");
-      Serial.print(packet[5]);
-      Serial.print("; POTL: ");
-      Serial.print(packet[6]);
-      Serial.print("; POTR: ");
-      Serial.print(packet[7]);
-      Serial.println();
       delay(5);
 }
