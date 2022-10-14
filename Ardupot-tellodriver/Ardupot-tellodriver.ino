@@ -52,12 +52,12 @@ struct CMD_Packet {
 struct CMD_Tran{
   byte LButton;
   byte RButton;
-  int LStickY;
+  int LStickY;//THROTTLE
   int LStickX;//YAW
   int RStickX;//ROLL
   int RStickY;//PITCH
-  int LTrim;//THROTTLE LARGE
-  int RTrim;//THROTTLE SMALL
+  int LTrim;//POTLEFT
+  int RTrim;//POTRIGHT
   byte BbyMode;
   byte leftSW;
   byte rightSW;
@@ -128,83 +128,85 @@ void map_values_RF() {
 }
 
 void key_press(){
-  if (cmd.LStickX > 750){ // Yaw+
-    Keyboard.press('d');
-  }
-  else if (cmd.LStickX < 250){ // Yaw-
-    Keyboard.press('a');
-  }
-  else{
-    Keyboard.release('d');
-    Keyboard.release('a');
-  }
-
-  if (cmd.LStickY > 750){ // Throttle+
-    Keyboard.press('w');
-  }
-  else if (cmd.LStickY < 250){  //Throttle-
-    Keyboard.press('s');
-  }
-  else{
-    Keyboard.release('w');
-    Keyboard.release('s');
-  }
-
-  if (cmd.RStickX > 750){ // Roll+
-    Keyboard.press(KEY_RIGHT_ARROW);
-  }
-  else if (cmd.RStickX < 750){  // Roll-
-    Keyboard.press(KEY_LEFT_ARROW);
-  }else{
-    Keyboard.release(KEY_RIGHT_ARROW);
-    Keyboard.release(KEY_LEFT_ARROW);
-  }
-
-  if (cmd.RStickY > 750){ // Pitch+
-    Keyboard.press(KEY_UP_ARROW);
-  }
-  else if (cmd.RStickY < 750){  // Pitch-
-    Keyboard.press(KEY_DOWN_ARROW);
-  }
-  else{
-    Keyboard.release(KEY_UP_ARROW);
-    Keyboard.release(KEY_DOWN_ARROW);
-  }
-
-  if (cmd.LTrim <= 500 && cmd.RTrim <= 500){
-    if (cmd.LButton == 0){
-      Keyboard.press('u');  // Front Flip
-    }
-    else{
-      Keyboard.release('u');
-    }
-  }
-
-  if (cmd.LTrim <= 500 && cmd.RTrim >= 500){
-    if (cmd.LButton == 0){
-      Keyboard.press('h');  // Left Flip
-    }
-    else{
-      Keyboard.release('h');
-    }
-  }
-
-  if (cmd.LTrim >= 500 && cmd.RTrim <= 500){
-    if (cmd.LButton == 0){
-      Keyboard.press('j');  // Back Flip
-    }
-    else{
-      Keyboard.release('j');
-    }
-  }
-
-  if (cmd.LTrim >= 500 && cmd.RTrim >= 500){
-    if (cmd.LButton == 0){
-      Keyboard.press('k');  // Right Flip
-    }
-    else{
-      Keyboard.release('k');
-    }
+  if (takeoff == true){
+      if (cmd.LStickX > 750){ // Yaw+
+        Keyboard.press('d');
+      }
+      else if (cmd.LStickX < 250){ // Yaw-
+        Keyboard.press('a');
+      }
+      else{
+        Keyboard.release('d');
+        Keyboard.release('a');
+      }
+    
+      if (cmd.LStickY > 750){ // Throttle+
+        Keyboard.press('w');
+      }
+      else if (cmd.LStickY < 250){  //Throttle-
+        Keyboard.press('s');
+      }
+      else{
+        Keyboard.release('w');
+        Keyboard.release('s');
+      }
+    
+      if (cmd.RStickX > 750){ // Roll+
+        Keyboard.press('v');
+      }
+      else if (cmd.RStickX < 250){  // Roll-
+        Keyboard.press('z');
+      }else{
+        Keyboard.release('v');
+        Keyboard.release('z');
+      }
+    
+      if (cmd.RStickY > 750){ // Pitch+
+        Keyboard.press('c');
+      }
+      else if (cmd.RStickY < 250){  // Pitch-
+        Keyboard.press('x');
+      }
+      else{
+        Keyboard.release('c');
+        Keyboard.release('x');
+      }
+    
+      if (cmd.LTrim <= 500 && cmd.RTrim <= 500){
+        if (cmd.LButton == 0){
+          Keyboard.press('u');  // Front Flip
+        }
+        else{
+          Keyboard.release('u');
+        }
+      }
+    
+      if (cmd.LTrim <= 500 && cmd.RTrim >= 500){
+        if (cmd.LButton == 0){
+          Keyboard.press('h');  // Left Flip
+        }
+        else{
+          Keyboard.release('h');
+        }
+      }
+    
+      if (cmd.LTrim >= 500 && cmd.RTrim <= 500){
+        if (cmd.LButton == 0){
+          Keyboard.press('j');  // Back Flip
+        }
+        else{
+          Keyboard.release('j');
+        }
+      }
+    
+      if (cmd.LTrim >= 500 && cmd.RTrim >= 500){
+        if (cmd.LButton == 0){
+          Keyboard.press('k');  // Right Flip
+        }
+        else{
+          Keyboard.release('k');
+        }
+      }
   }
 
   if (takeoff == false){
@@ -244,13 +246,13 @@ void OLED_display_YES() {
   display.setCursor(0,8);
   display.println("YAW: " + String(cmd.LStickX));
   display.setCursor(64,8);
-  display.println("THR: " + String(cmd.LTrim));
+  display.println("THR: " + String(cmd.LStickY));
   display.setCursor(0,16);
   display.println("ROLL: " + String(cmd.RStickX));
   display.setCursor(64,16);
   display.println("PTC: " + String(cmd.RStickY));
   display.setCursor(0,24);
-  display.println("TL: " + String(cmd.LStickY));
+  display.println("TL: " + String(cmd.LTrim));
   display.setCursor(64,24);
   display.println("TR: " + String(cmd.RTrim));
   display.display();
